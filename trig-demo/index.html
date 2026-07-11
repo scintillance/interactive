@@ -10,7 +10,7 @@
   <!-- Workspace -->
   <div class="demo-workspace">
     <!-- Visual Triangle Area -->
-    <svg id="triangleSvg" width="300" height="250" viewBox="0 0 300 250">
+    <svg id="triangleSvg" width="100%" height="250" viewBox="0 0 300 250">
       <!-- Grid Background -->
       <defs>
         <pattern id="grid" width="20" height="20" patternUnits="userSpaceOnUse">
@@ -26,7 +26,7 @@
       <polygon id="triangle" points="" fill="rgba(52, 152, 219, 0.2)" stroke="#34495e" stroke-width="3" />
       
       <!-- Text Labels -->
-      <text id="lblHypotenuse" fill="#e74c3c" font-weight="bold" text-anchor="middle">Hypotenuse</text>
+      <text id="lblHypotenuse" fill="#e74c3c" font-weight="bold" text-anchor="middle" dominant-baseline="middle">Hypotenuse</text>
       <text id="lblOpposite" fill="#2ecc71" font-weight="bold" text-anchor="start">Opposite</text>
       <text id="lblAdjacent" fill="#9b59b6" font-weight="bold" text-anchor="middle">Adjacent</text>
       <text id="lblTheta" fill="#34495e" font-weight="bold" font-size="14">θ</text>
@@ -111,10 +111,8 @@
   const ratioSin = document.getElementById('ratioSin');
   const ratioCos = document.getElementById('ratioCos');
   const ratioTan = document.getElementById('ratioTan');
+  const mark = document.getElementById('rightAngleMark');
 
-  // Fixed Anchor Point for Right Angle: (240, 200)
-  const bx = 240; 
-  const by = 200;
   const hypLength = 180; // Fixed radius for the hypotenuse sweep
 
   function updateDemo() {
@@ -128,16 +126,25 @@
     const adjacentSide = hypLength * Math.cos(radians);
 
     // Coordinate Math for Triangle Nodes
-    const rightAngleX = bx;
-    const rightAngleY = by;
-    const thetaX = bx - adjacentSide;
-    const thetaY = by;
-    const topX = bx;
-    const topY = by - oppositeSide;
+    const thetaX = 50;
+    const thetaY = 200;
+    
+    const rightAngleX = thetaX + adjacentSide;
+    const rightAngleY = thetaY;
+    
+    const topX = rightAngleX;
+    const topY = rightAngleY - oppositeSide;
 
     // Redraw Triangle Polygon
     triangle.setAttribute('points', `${thetaX},${thetaY} ${rightAngleX},${rightAngleY} ${topX},${topY}`);
 
+    // Redraw Right Angle
+    if ((degrees > 4) && (degrees < 86)) {
+      mark.setAttribute('d', `M ${rightAngleX - 10} ${rightAngleY} L ${rightAngleX - 10} ${rightAngleY - 10} L ${rightAngleX} ${rightAngleY - 10}`);
+    } else {
+      mark.setAttribute('d', "")
+    }
+    
     // Update Text Outputs
     valHyp.textContent = hypLength.toFixed(0);
     valOpp.textContent = oppositeSide.toFixed(0);
@@ -148,8 +155,15 @@
     ratioTan.textContent = Math.tan(radians).toFixed(3);
 
     // Dynamically position visual labels next to matching sides
-    lblHyp.setAttribute('x', (thetaX + topX) / 2 - 15);
-    lblHyp.setAttribute('y', (thetaY + topY) / 2 - 15);
+
+    const hypMidX = (thetaX + topX) / 2;
+    const hypMidY = (thetaY + topY) / 2;
+    
+    lblHyp.setAttribute('x', hypMidX);
+    lblHyp.setAttribute('y', hypMidY);
+
+    lblHyp.style.transform = `rotate(${-degrees}deg) translate(0px, -12px)`
+    lblHyp.style.transformOrigin = `${hypMidX}px ${hypMidY}px`
     
     lblOpp.setAttribute('x', rightAngleX + 10);
     lblOpp.setAttribute('y', (topY + rightAngleY) / 2);
@@ -157,8 +171,13 @@
     lblAdj.setAttribute('x', (thetaX + rightAngleX) / 2);
     lblAdj.setAttribute('y', rightAngleY + 20);
 
-    lblTheta.setAttribute('x', thetaX + 25);
-    lblTheta.setAttribute('y', thetaY - 8);
+    lblTheta.setAttribute('x', thetaX + Math.cos(radians) * 50);
+    lblTheta.setAttribute('y', Math.max(thetaY - 8, thetaY - Math.sin(radians) * 10));
+    if (degrees < 12 || degrees > 86) {
+      lblTheta.setAttribute('opacity', 0); 
+    } else {
+      lblTheta.setAttribute('opacity', 1)
+    }
   }
 
   slider.addEventListener('input', updateDemo);
