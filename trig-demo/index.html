@@ -3,7 +3,6 @@
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;700&display=swap">
 <link href="https://fonts.googleapis.com/css2?family=Ibarra+Real+Nova:ital,wght@0,400..700;1,400..700&family=Instrument+Serif:ital@0;1&family=Space+Mono:ital,wght@0,400;0,700;1,400;1,700&display=swap" rel="stylesheet">
 
-<div class="whole-screen">
 <div class="trig-demo-container">
   <h1 class="title">Intro to Trig: &nbsp;<em class="title2"> the earliest times </em></h1>
   
@@ -51,12 +50,15 @@
     </div>
   </div>
 </div>
-</div>
   
 <style>
-.whole-screen {
-  width: 100vw;
-  height: 100vh;
+*, *::before, *::after {
+  box-sizing: border-box;
+}
+body {
+  margin: 0;
+  padding: 0;
+  overflow: hidden;
   background: linear-gradient(190deg,rgb(255,255,255) 39%,rgb(209,236,255) 62%,rgb(246,230,255) 72%,rgb(168,196,255) 83%,rgb(117,188,255) 100%);
 }
 .trig-demo-container {
