@@ -1,0 +1,338 @@
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;700&display=swap">
+<link href="https://fonts.googleapis.com/css2?family=Albert+Sans:ital,wght@0,100..900;1,100..900&family=Ibarra+Real+Nova:ital,wght@0,400..700;1,400..700&family=Instrument+Serif:ital@0;1&family=Space+Mono:ital,wght@0,400;0,700;1,400;1,700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="../global-styles.css">
+
+<!-- Main container -->
+<div class="container">
+
+  <!-- Title -->
+  <div class="centered"><span class="title">Intro to Trig:</span> <span class="subtitle">the unit circle</span></div>
+
+  <!-- Workspace with SVG canvas & math results display -->
+  <div class="workspace">
+
+    <!-- Circle SVG canvas -->
+    <div class="capsule" style="max-width: 320px; margin: 20px auto; box-shadow: var(--glow-inset-shadow);">
+      <svg id="circleSvg" width="100%" height="300" viewBox="0 0 300 300"style="background: transparent; display: block;">
+
+        <!-- Coordinate axes -->
+        <line x1="150" y1="20" x2="150" y2="280" stroke="var(--blue-title)" stroke-dasharray="4" />
+        <line x1="20" y1="150" x2="280" y2="150" stroke="var(--blue-title)" stroke-dasharray="4" />
+
+        <!-- Unit circle -->
+        <circle cx="150" cy="150" r="100" fill="none" stroke="var(--navy)" stroke-width="2" />
+
+        <!-- Theta angle -->
+        <path id="thetaAngle" d="" fill="none" stroke="var(--yellow)" stroke-width="2" />
+
+        <!-- Theta vectors-->
+        <line id="thetaMovingVector" x1="150" y1="150" x2="150" y2="150" stroke="var(--yellow)" stroke-width="2" />
+        <line id="thetaStationaryVector" x1="150" y1="150" x2="250" y2="150" stroke="var(--yellow)" stroke-width="2" />
+        
+        <!-- Reference triangle -->
+        <polygon id="referenceTriangle" points="150,150 150,150 150,150" fill=var(--mint-trans) stroke="var(--mint-title)" stroke-width=2 />
+        
+        <!-- Unit circle node -->
+        <circle id="unitCircleNode" cx="250" cy="150" r="10" fill="var(--blue-title)" stroke="#fff" stroke-width="2" class="circle-point" />
+
+        <!-- Cosine node -->
+        <circle id="cosNode" cx="250" cy="25" r=7 fill="var(--blue-text)" stroke="#fff" stroke-width="1" class="circle-point" />
+        
+        <!-- Sine node -->
+        <circle id="sinNode" cx="290" cy="150" r=7 fill="var(--red-label)" stroke="#fff" stroke-width="1" class="circle-point" />
+        
+      </svg>
+    </div>
+
+    <!-- Math results & checkboxes -->
+    <div class="monospace-results-2">
+      
+      <p><strong>Angle: θ = </strong> <span id="angleDisplay">0</span>°</p>
+      <p><strong>x = <span class="cos-label">cos(θ)</span> = </strong> <span id="cosDisplay">1.000</span></p>
+      <p><strong>y = <span class="sin-label">sin(θ)</span> =</strong> <span id="sinDisplay">0.000</span></p>
+      
+      <label for="showTriangleCheckbox" style="display: block; margin: 15px auto; cursor: pointer; text-align: center;">
+      <input type="checkbox" id="showTriangleCheckbox" checked> Show Reference Triangle
+      </label>
+
+      <label for="autoSpinCheckbox" style="display: block; margin: 15px auto; cursor: pointer; text-align: center;">
+      <input type="checkbox" id="autoSpinCheckbox"> Automatically rotate
+      </label>
+      
+    </div>
+  
+  </div>
+</div>
+
+
+<style>
+body {
+  margin: 0;
+  padding: 0;
+  background-image: var(--gradient-scintilla);
+}
+.circle-point {
+  cursor: grab;
+  transition: r 0.1s ease, fill 0.1s ease
+}
+.circle-point:hover {
+  fill: var(--mint-title);
+  r: 13px;
+}
+.circle-point:active {
+  cursor: grabbing;
+  fill: var(--mint-title);
+}
+.monospace-results-2 {
+  margin: 8px 0;
+  font-family: 'Space Mono', monospace;
+  font-size: 16px;
+  padding: 5px 10px;
+  flex: 1 1 200px;
+  min-width: 180px;
+  text-align: center;
+}
+.theta-label {
+  color: var(--yellow);
+}
+.cos-label {
+  color: var(--blue-text);
+}
+.sin-label {
+  color: var(--red-text);
+}
+</style>
+
+
+<script>
+// TODO: Add graphs?
+
+let isAutoSpin = false;
+let animationId = null;
+let currentInternalAngle = 0;
+
+(function() {
+  // ---------------- DOM selectors ----------------
+  const circleSvg = document.getElementById('circleSvg');
+  
+  const unitCircleNode = document.getElementById('unitCircleNode');
+  const cosNode = document.getElementById('cosNode');
+  const sinNode = document.getElementById('sinNode');
+  
+  const thetaAngle = document.getElementById('thetaAngle');
+  const thetaMovingVector = document.getElementById('thetaMovingVector');
+  
+  const triangle = document.getElementById('referenceTriangle');
+  
+  const angleDisplay = document.getElementById('angleDisplay');
+  const cosDisplay = document.getElementById('cosDisplay');
+  const sinDisplay = document.getElementById('sinDisplay');
+  
+  const showTriangleCheckbox = document.getElementById('showTriangleCheckbox');
+  
+  // Hardcoded info
+  const cx = 150;
+  const cy = 150;
+  const radius = 100;
+
+  let isDraggingUnitCircleNode = false;
+  let isDraggingCosNode = false;
+  let isDraggingSinNode = false;
+
+  // ---------------- LISTENERS ----------------
+  // DRAGGING UNIT CIRCLE NODE (note mobile equivalents)
+  // Holding down node
+  unitCircleNode.addEventListener('mousedown', () => isDraggingUnitCircleNode = true);
+  window.addEventListener('mouseup', () => isDraggingUnitCircleNode = false);
+  unitCircleNode.addEventListener('touchstart', (e) => {
+    isDraggingUnitCircleNode = true;
+    e.preventDefault(); // Prevents phone screen from scrolling down while dragging
+  });
+  window.addEventListener('touchend', () => isDraggingUnitCircleNode = false);
+  // Moving node
+  window.addEventListener('mousemove', dragUnitCircleEngine);
+  window.addEventListener('touchmove', dragUnitCircleEngine, { passive: false });
+
+  // DRAGGING SINE NODE
+  // Holding down node
+  sinNode.addEventListener('mousedown', () => isDraggingSinNode = true);
+  window.addEventListener('mouseup', () => isDraggingSinNode = false);
+  sinNode.addEventListener('touchstart', (e) => {
+    isDraggingSinNode = true;
+    e.preventDefault(); // Prevents phone screen from scrolling down while dragging
+  });
+  window.addEventListener('touchend', () => isDraggingSinNode = false);
+  // Moving node
+  window.addEventListener('mousemove', dragSinEngine);
+  window.addEventListener('touchmove', dragSinEngine, { passive: false });
+
+  // DRAGGING COSINE NODE
+  // Holding down node
+  cosNode.addEventListener('mousedown', () => isDraggingCosNode = true);
+  window.addEventListener('mouseup', () => isDraggingCosNode = false);
+  cosNode.addEventListener('touchstart', (e) => {
+    isDraggingCosNode = true;
+    e.preventDefault(); // Prevents phone screen from scrolling down while dragging
+  });
+  window.addEventListener('touchend', () => isDraggingCosNode = false);
+  // Moving node
+  window.addEventListener('mousemove', dragCosEngine);
+  window.addEventListener('touchmove', dragCosEngine, { passive: false });
+  
+  // CHECKED "SHOW REFERENCE TRIANGLE"
+  showTriangleCheckbox.addEventListener('change', () => {
+    const isShowTriangle = showTriangleCheckbox.checked;
+
+    if (isShowTriangle) {
+      triangle.setAttribute('opacity', 1);
+    } else {
+      triangle.setAttribute('opacity', 0);
+    }
+  });
+
+  // CHECKED "AUTOMATICALLY ROTATE"
+  autoSpinCheckbox.addEventListener('change', () => {
+    isAutoSpin = autoSpinCheckbox.checked;
+
+    if (isAutoSpin) {
+      // Start animation
+      animationId = requestAnimationFrame(spinLoop);
+    } else {
+      // Halt animation
+      cancelAnimationFrame(animationId);
+    }
+  });
+
+  // ---------------- EVENT LOOP ----------------
+  // WHEN AUTO-SPIN CHECKED
+  function spinLoop() {
+    if (!isAutoSpin) return; // Do not run if auto-spin box is unchecked
+
+    // Adjust current angle a bit by some speed each frame
+    const speed = 0.005; 
+    currentInternalAngle -= speed;
+
+    // Makre sure internal angle doesn't go negative
+    if (currentInternalAngle < 0) {
+      currentInternalAngle += Math.PI * 2;
+    }
+
+    // Update screen
+    updateNodesAndDisplay();
+
+    // Keep running animation once started
+    animationId = requestAnimationFrame(spinLoop);
+  }
+
+  // WHEN COSINE NODE DRAGGED
+  function dragCosEngine(event) {
+    if (!isDraggingCosNode) return; // Do not run if not dragging the cos node
+
+    // Extract the raw screen pixel coordinates of the circle SVG box
+    const rect = circleSvg.getBoundingClientRect();    
+    const clientX = event.touches ? event.touches[0].clientX : event.clientX;
+    const clientY = event.touches ? event.touches[0].clientY : event.clientY;
+    // Convert global screen cursor coordinates into internal local SVG map pixels
+    const mouseX = ((clientX - rect.left) / rect.width) * 300;
+    const mouseY = ((clientY - rect.top) / rect.height) * 300;
+    
+    // Force cos node point to stay on horizontal track (bound between 50 and 250)
+    const CosNodeX = Math.min(Math.max(mouseX, cy - radius), cy + radius);
+
+    // Calculate new angle based on x-position of cos node on track
+    let tempInternalAngle = Math.acos((CosNodeX - cx) / radius);
+    if (angleDisplay.textContent >= 180 && angleDisplay.textContent < 360) {
+       tempInternalAngle = 2 * Math.PI - tempInternalAngle; // to make the angle loop around
+    }
+
+    // Update internal angle and screen
+    currentInternalAngle = -tempInternalAngle;
+    updateNodesAndDisplay();
+  }
+  
+  // WHEN SIN NODE DRAGGED
+  function dragSinEngine(event) {
+    if (!isDraggingSinNode) return; // Do not run if not dragging the sin node
+
+    // Extract the raw screen pixel coordinates of the circle SVG box
+    const rect = circleSvg.getBoundingClientRect();    
+    const clientX = event.touches ? event.touches[0].clientX : event.clientX;
+    const clientY = event.touches ? event.touches[0].clientY : event.clientY;
+    // Convert global screen cursor coordinates into internal local SVG map pixels
+    const mouseX = ((clientX - rect.left) / rect.width) * 300;
+    const mouseY = ((clientY - rect.top) / rect.height) * 300;
+    
+    // Force sin node point to stay on vertical track (bound between 50 and 250)
+    const SinNodeY = Math.min(Math.max(mouseY, cx - radius), cx + radius);
+
+    // Calculate new angle based on y-position of sine node on track
+    let tempInternalAngle = Math.asin((SinNodeY - cy) / radius);
+    if (angleDisplay.textContent >= 90 && angleDisplay.textContent < 270) {
+      tempInternalAngle = Math.PI - tempInternalAngle; // to make the angle loop around
+    }
+
+    // Update internal angle and screen
+    currentInternalAngle = tempInternalAngle;
+    updateNodesAndDisplay();
+  }
+
+  // WHEN UNIT CIRCLE DRAGGED
+  function dragUnitCircleEngine(event) {
+    if (!isDraggingUnitCircleNode) return; // Do not run if not dragging the unit circle node
+    
+    // Extract the raw screen pixel coordinates of the circle SVG box
+    const rect = circleSvg.getBoundingClientRect();
+    const clientX = event.touches ? event.touches[0].clientX : event.clientX;
+    const clientY = event.touches ? event.touches[0].clientY : event.clientY;
+    // Convert global screen cursor coordinates into internal local SVG map pixels
+    const mouseX = ((clientX - rect.left) / rect.width) * 300;
+    const mouseY = ((clientY - rect.top) / rect.height) * 300;
+
+    // Update internal angle and screen
+    currentInternalAngle = Math.atan2(mouseY - cy, mouseX - cx);;
+    updateNodesAndDisplay();
+   }
+
+  // UPDATE SCREEN: position of unit circle node & sine node; math display
+  function updateNodesAndDisplay() {
+
+    // Calculate the x and y of the point on the unit circle
+    const x = cx + radius * Math.cos(currentInternalAngle);
+    const y = cy + radius * Math.sin(currentInternalAngle);
+
+    // Place unit circle node & sine node
+    unitCircleNode.setAttribute('cx', x);
+    unitCircleNode.setAttribute('cy', y);
+    sinNode.setAttribute('cy', y);
+    cosNode.setAttribute('cx', x);
+
+    // Update theta angle
+    const thetaAngleX = cx + radius * Math.cos(currentInternalAngle) / 10;
+    const thetaAngleY = cy + radius * Math.sin(currentInternalAngle) / 10;
+    if (Math.sin(currentInternalAngle) > 0) {
+      thetaAngle.setAttribute('d', `M 160 150 A 10 10 0 1 0 ${thetaAngleX} ${thetaAngleY}`);
+    } else {
+      thetaAngle.setAttribute('d', `M 160 150 A 10 10 0 0 0 ${thetaAngleX} ${thetaAngleY}`);
+    }
+
+    // Update theta (moving) vector
+    thetaMovingVector.setAttribute('x2', `${x}`);
+    thetaMovingVector.setAttribute('y2', `${y}`);
+    
+    // Update reference triangle
+    triangle.setAttribute('points', `${cx},${cy} ${x},${cy} ${x},${y}`);
+    
+    // Calulate and display the angle, cos, and sin
+    let degrees = Math.round(-currentInternalAngle * (180 / Math.PI));
+    if (degrees < 0) { 
+      degrees += 360;
+    }
+    angleDisplay.textContent = degrees;
+    cosDisplay.textContent = Math.cos(currentInternalAngle).toFixed(3);
+    sinDisplay.textContent = (-Math.sin(currentInternalAngle)).toFixed(3);
+  }
+  
+})();
+</script>
