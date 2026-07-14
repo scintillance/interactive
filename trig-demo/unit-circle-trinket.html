@@ -28,20 +28,29 @@
         <path id="thetaAngle" d="" fill="none" stroke="var(--yellow)" stroke-width="2" />
 
         <!-- Theta vectors-->
-        <line id="thetaMovingVector" x1="150" y1="150" x2="150" y2="150" stroke="var(--yellow)" stroke-width="2" />
+        <line id="thetaMovingVector" x1="150" y1="150" stroke="var(--yellow)" stroke-width="2" />
         <line id="thetaStationaryVector" x1="150" y1="150" x2="250" y2="150" stroke="var(--yellow)" stroke-width="2" />
         
         <!-- Reference triangle -->
-        <polygon id="referenceTriangle" points="150,150 150,150 150,150" fill=var(--mint-trans) stroke="var(--mint-title)" stroke-width=2 />
+        <polygon id="referenceTriangle" fill=var(--mint-trans) stroke="var(--mint-title)" stroke-width=2 />
+
+        <!-- Right angle mark -->
+        <path id="rightAngleMark" d="" fill="none" stroke="var(--mint-title)" stroke-width="2" />
         
         <!-- Unit circle node -->
-        <circle id="unitCircleNode" cx="250" cy="150" r="10" fill="var(--blue-title)" stroke="#fff" stroke-width="2" class="circle-point" />
+        <circle id="unitCircleNode" r="10" fill="var(--blue-title)" stroke="#fff" stroke-width="2" class="circle-point" />
 
         <!-- Cosine node -->
-        <circle id="cosNode" cx="250" cy="25" r=7 fill="var(--blue-text)" stroke="#fff" stroke-width="1" class="circle-point" />
+        <circle id="cosNode" cy="25" r=7 fill="var(--blue-text)" stroke="#fff" stroke-width="1" class="circle-point" />
         
         <!-- Sine node -->
-        <circle id="sinNode" cx="290" cy="150" r=7 fill="var(--red-label)" stroke="#fff" stroke-width="1" class="circle-point" />
+        <circle id="sinNode" cx="290" r=7 fill="var(--red-label)" stroke="#fff" stroke-width="1" class="circle-point" />
+
+        <!-- Text labels -->
+        <text id="lblRadius" class="unHighlightable" fill="var(--yellow)" font-weight="bold" text-anchor="middle" dominant-baseline="middle" font-family="Space Mono">1</text>
+        <text id="lblThetaAngle" class="unHighlightable" fill="var(--yellow)" text-anchor="middle" dominant-baseline="middle" font-family="Space Mono"></text>
+        <text id="lblCos" class="unHighlightable" y="25" fill="var(--blue-text)" text-anchor="middle" dominant-baseline="middle" font-family="Space Mono">1.000</text>
+        <text id="lblSin" class="unHighlightable" x="280" fill="var(--red-label)" text-anchor="middle" dominant-baseline="middle" font-family="Space Mono">0.000</text>
         
       </svg>
     </div>
@@ -49,9 +58,13 @@
     <!-- Math results & checkboxes -->
     <div class="monospace-results-2">
       
-      <p><strong>Angle: θ = </strong> <span id="angleDisplay">0</span>°</p>
-      <p><strong>x = <span class="cos-label">cos(θ)</span> = </strong> <span id="cosDisplay">1.000</span></p>
-      <p><strong>y = <span class="sin-label">sin(θ)</span> =</strong> <span id="sinDisplay">0.000</span></p>
+      <p><strong>Angle: <span class="thetaDisplayText">θ</span> = </strong> <span id="angleDisplay"></span>°</p>
+      <p><strong>x = <span class="cosDisplayText">cos(θ)</span> = </strong> <span id="cosDisplay"></span></p>
+      <p><strong>y = <span class="sinDisplayText">sin(θ)</span> =</strong> <span id="sinDisplay"></span></p>
+      
+      <label for="showLabelsCheckbox" style="display: block; margin: 15px auto; cursor: pointer; text-align: center;">
+      <input type="checkbox" id="showLabelsCheckbox" checked> Show Labels
+      </label>
       
       <label for="showTriangleCheckbox" style="display: block; margin: 15px auto; cursor: pointer; text-align: center;">
       <input type="checkbox" id="showTriangleCheckbox" checked> Show Reference Triangle
@@ -94,21 +107,22 @@ body {
   min-width: 180px;
   text-align: center;
 }
-.theta-label {
+.thetaDisplayText {
   color: var(--yellow);
 }
-.cos-label {
+.cosDisplayText {
   color: var(--blue-text);
 }
-.sin-label {
+.sinDisplayText {
   color: var(--red-text);
 }
 </style>
 
 
 <script>
-// TODO: Add graphs?
+// Add graphs?
 
+let isShowLabels = true;
 let isAutoSpin = false;
 let animationId = null;
 let currentInternalAngle = 0;
@@ -117,19 +131,24 @@ let currentInternalAngle = 0;
   // ---------------- DOM selectors ----------------
   const circleSvg = document.getElementById('circleSvg');
   
+  const thetaAngle = document.getElementById('thetaAngle');
+  const thetaMovingVector = document.getElementById('thetaMovingVector');
+  const triangle = document.getElementById('referenceTriangle');
+  const rightAngleMark = document.getElementById('rightAngleMark');
+
   const unitCircleNode = document.getElementById('unitCircleNode');
   const cosNode = document.getElementById('cosNode');
   const sinNode = document.getElementById('sinNode');
   
-  const thetaAngle = document.getElementById('thetaAngle');
-  const thetaMovingVector = document.getElementById('thetaMovingVector');
-  
-  const triangle = document.getElementById('referenceTriangle');
+  const lblRadius = document.getElementById('lblRadius');
+  const lblThetaAngle = document.getElementById('lblThetaAngle');
+  const lblCos = document.getElementById('lblCos');
+  const lblSin = document.getElementById('lblSin');
   
   const angleDisplay = document.getElementById('angleDisplay');
   const cosDisplay = document.getElementById('cosDisplay');
   const sinDisplay = document.getElementById('sinDisplay');
-  
+  const showLabelsCheckbox = document.getElementById('showLabelsCheckbox');
   const showTriangleCheckbox = document.getElementById('showTriangleCheckbox');
   
   // Hardcoded info
@@ -137,10 +156,12 @@ let currentInternalAngle = 0;
   const cy = 150;
   const radius = 100;
 
+  // Booleans to track if dragging nodes
   let isDraggingUnitCircleNode = false;
   let isDraggingCosNode = false;
   let isDraggingSinNode = false;
-
+  let isThetaLargeEnough = false;
+  
   // ---------------- LISTENERS ----------------
   // DRAGGING UNIT CIRCLE NODE (note mobile equivalents)
   // Holding down node
@@ -180,6 +201,28 @@ let currentInternalAngle = 0;
   // Moving node
   window.addEventListener('mousemove', dragCosEngine);
   window.addEventListener('touchmove', dragCosEngine, { passive: false });
+
+  // CHECKED "SHOW LABELS"
+  showLabelsCheckbox.addEventListener('change', () => {
+    isShowLabels = showLabelsCheckbox.checked;
+    
+    if (isShowLabels) {
+      lblRadius.setAttribute('opacity', 1);
+      lblCos.setAttribute('opacity', 1);
+      lblSin.setAttribute('opacity', 1);
+      thetaAngle.setAttribute('opacity', 1);
+      if (isThetaLargeEnough) {
+        lblThetaAngle.setAttribute('opacity', 1);
+      }
+    } else {
+      lblRadius.setAttribute('opacity', 0);
+      lblCos.setAttribute('opacity', 0);
+      lblSin.setAttribute('opacity', 0);
+      thetaAngle.setAttribute('opacity', 0);
+      lblThetaAngle.setAttribute('opacity', 0);
+    }
+  });
+
   
   // CHECKED "SHOW REFERENCE TRIANGLE"
   showTriangleCheckbox.addEventListener('change', () => {
@@ -187,8 +230,10 @@ let currentInternalAngle = 0;
 
     if (isShowTriangle) {
       triangle.setAttribute('opacity', 1);
+      rightAngleMark.setAttribute('opacity', 1);
     } else {
       triangle.setAttribute('opacity', 0);
+      rightAngleMark.setAttribute('opacity', 0);
     }
   });
 
@@ -226,6 +271,14 @@ let currentInternalAngle = 0;
     animationId = requestAnimationFrame(spinLoop);
   }
 
+  // MAKE SURE INTERNAL ANGLE IS ALWAYS POSITIVE
+  function makeAnglePositive(radians) {
+    if (radians < 0) {
+      return radians + 2 * Math.PI;
+    }
+    return radians;
+  }
+  
   // WHEN COSINE NODE DRAGGED
   function dragCosEngine(event) {
     if (!isDraggingCosNode) return; // Do not run if not dragging the cos node
@@ -242,13 +295,13 @@ let currentInternalAngle = 0;
     const CosNodeX = Math.min(Math.max(mouseX, cy - radius), cy + radius);
 
     // Calculate new angle based on x-position of cos node on track
-    let tempInternalAngle = Math.acos((CosNodeX - cx) / radius);
-    if (angleDisplay.textContent >= 180 && angleDisplay.textContent < 360) {
-       tempInternalAngle = 2 * Math.PI - tempInternalAngle; // to make the angle loop around
+    let tempInternalAngle = makeAnglePositive(-Math.acos((CosNodeX - cx) / radius));
+    if (currentInternalAngle <= Math.PI && currentInternalAngle > 0) {
+      tempInternalAngle = - tempInternalAngle;
     }
-
+    
     // Update internal angle and screen
-    currentInternalAngle = -tempInternalAngle;
+    currentInternalAngle = makeAnglePositive(tempInternalAngle);
     updateNodesAndDisplay();
   }
   
@@ -269,15 +322,15 @@ let currentInternalAngle = 0;
 
     // Calculate new angle based on y-position of sine node on track
     let tempInternalAngle = Math.asin((SinNodeY - cy) / radius);
-    if (angleDisplay.textContent >= 90 && angleDisplay.textContent < 270) {
-      tempInternalAngle = Math.PI - tempInternalAngle; // to make the angle loop around
+    if (currentInternalAngle <= 3 * Math.PI / 2 && currentInternalAngle > Math.PI / 2) {
+      tempInternalAngle = Math.PI - tempInternalAngle;
     }
-
+    
     // Update internal angle and screen
-    currentInternalAngle = tempInternalAngle;
+    currentInternalAngle = makeAnglePositive(tempInternalAngle);
     updateNodesAndDisplay();
   }
-
+  
   // WHEN UNIT CIRCLE DRAGGED
   function dragUnitCircleEngine(event) {
     if (!isDraggingUnitCircleNode) return; // Do not run if not dragging the unit circle node
@@ -291,48 +344,97 @@ let currentInternalAngle = 0;
     const mouseY = ((clientY - rect.top) / rect.height) * 300;
 
     // Update internal angle and screen
-    currentInternalAngle = Math.atan2(mouseY - cy, mouseX - cx);;
+    currentInternalAngle = makeAnglePositive(Math.atan2(mouseY - cy, mouseX - cx));
     updateNodesAndDisplay();
    }
 
   // UPDATE SCREEN: position of unit circle node & sine node; math display
   function updateNodesAndDisplay() {
 
-    // Calculate the x and y of the point on the unit circle
-    const x = cx + radius * Math.cos(currentInternalAngle);
-    const y = cy + radius * Math.sin(currentInternalAngle);
-
-    // Place unit circle node & sine node
-    unitCircleNode.setAttribute('cx', x);
-    unitCircleNode.setAttribute('cy', y);
-    sinNode.setAttribute('cy', y);
-    cosNode.setAttribute('cx', x);
-
-    // Update theta angle
-    const thetaAngleX = cx + radius * Math.cos(currentInternalAngle) / 10;
-    const thetaAngleY = cy + radius * Math.sin(currentInternalAngle) / 10;
-    if (Math.sin(currentInternalAngle) > 0) {
-      thetaAngle.setAttribute('d', `M 160 150 A 10 10 0 1 0 ${thetaAngleX} ${thetaAngleY}`);
-    } else {
-      thetaAngle.setAttribute('d', `M 160 150 A 10 10 0 0 0 ${thetaAngleX} ${thetaAngleY}`);
-    }
-
+    // Calculate current sine and cosine & the position on the unit circle
+    const currentCos = Math.cos(currentInternalAngle);
+    const currentSin = Math.sin(currentInternalAngle);
+    const x = cx + radius * currentCos;
+    const y = cy + radius * currentSin;
+    
     // Update theta (moving) vector
     thetaMovingVector.setAttribute('x2', `${x}`);
     thetaMovingVector.setAttribute('y2', `${y}`);
     
+    // Update theta angle
+    const thetaAngleX = cx + radius * currentCos / 10;
+    const thetaAngleY = cy + radius * currentSin / 10;
+    if (currentSin > 0) {
+      thetaAngle.setAttribute('d', `M 160 150 A 10 10 0 1 0 ${thetaAngleX} ${thetaAngleY}`);
+    } else {
+      thetaAngle.setAttribute('d', `M 160 150 A 10 10 0 0 0 ${thetaAngleX} ${thetaAngleY}`);
+   0 }
+    
     // Update reference triangle
     triangle.setAttribute('points', `${cx},${cy} ${x},${cy} ${x},${y}`);
+
+    // Update right angle mark
+    let markOffsetX;
+    if (currentCos > 0) { markOffsetX = -8; } else { markOffsetX = 8; }
+    let markOffsetY;
+    if (-currentSin > 0) { markOffsetY = -8; } else { markOffsetY = 8; }
+    rightAngleMark.setAttribute('d', `M ${x+markOffsetX} ${cy} L ${x+markOffsetX} ${cy+markOffsetY} ${x} ${cy+markOffsetY}`);
+
+    // Update nodes
+    unitCircleNode.setAttribute('cx', x);
+    unitCircleNode.setAttribute('cy', y);
+    sinNode.setAttribute('cy', y);
+    cosNode.setAttribute('cx', x);
     
-    // Calulate and display the angle, cos, and sin
+    // Update hypotenuse/radius "1" label
+    if (currentSin / currentCos > 0) {
+      lblRadius.setAttribute('x', cx + (radius * Math.cos(currentInternalAngle + Math.PI / 15))/2);
+      lblRadius.setAttribute('y', cy + (radius * Math.sin(currentInternalAngle + Math.PI / 15))/2);
+    } else {
+      lblRadius.setAttribute('x', cx + (radius * Math.cos(currentInternalAngle - Math.PI / 15))/2);
+      lblRadius.setAttribute('y', cy + (radius * Math.sin(currentInternalAngle - Math.PI / 15))/2);
+    }
+
+    // Update theta angle label
+    const internalHalfAngle = currentInternalAngle / 2 + Math.PI;
+    if (currentInternalAngle < 19 * Math.PI / 10 && currentInternalAngle > Math.PI) {
+      isThetaLargeEnough = true;
+      lblThetaAngle.setAttribute('x', cx + radius * Math.cos(internalHalfAngle) / 4);
+      lblThetaAngle.setAttribute('y', cy + radius * Math.sin(internalHalfAngle) / 4);
+    } else if (currentInternalAngle <= Math.PI && currentInternalAngle > 0) {
+      isThetaLargeEnough = true;
+      lblThetaAngle.setAttribute('x', cx + radius * Math.cos(internalHalfAngle) / 4);
+      lblThetaAngle.setAttribute('y', cy + radius * Math.sin(internalHalfAngle) / 4);
+    } else {
+      isThetaLargeEnough = false;
+    }
+    if (isShowLabels && isThetaLargeEnough) {
+      lblThetaAngle.setAttribute('opacity', 1);
+    } else {
+      lblThetaAngle.setAttribute('opacity', 0);
+    }
+
+    // Update cos label next to cos node
+    lblCos.setAttribute('x', x + 35);
+    
+    // Update sin label next to sin node
+    lblSin.setAttribute('y', y - 20);
+    
+    // Calulate and display the angle, cos, and sin in the math display and the canvas labels
     let degrees = Math.round(-currentInternalAngle * (180 / Math.PI));
     if (degrees < 0) { 
       degrees += 360;
     }
     angleDisplay.textContent = degrees;
-    cosDisplay.textContent = Math.cos(currentInternalAngle).toFixed(3);
-    sinDisplay.textContent = (-Math.sin(currentInternalAngle)).toFixed(3);
+    lblThetaAngle.textContent = `${degrees}°`;
+    
+    cosDisplay.textContent = currentCos.toFixed(3);
+    lblCos.textContent = currentCos.toFixed(2);
+    
+    sinDisplay.textContent = (-currentSin).toFixed(3);
+    lblSin.textContent = (-currentSin).toFixed(2);
   }
-  
+
+  updateNodesAndDisplay();
 })();
 </script>
