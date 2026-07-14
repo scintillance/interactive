@@ -3,6 +3,10 @@
 ======================================*/
 
 :root {
+  --navy: #4c6c9e;
+  --mint-trans: #72e9a033;
+  --blue-trans: rgba(52, 152, 219, 0.2);
+  
   --red-label: #b9675f; /*Color 15*/
   --green-label: #73deaa;
   --purple-label: #9480f4;
@@ -12,12 +16,16 @@
   
   --purple-text: #9a9edf; /*Color 8*/
   --red-text: #9e6f6b; /*Color 10*/
+  --blue-text: #639cca;
+  --blue-bright: #63cac3;
+  --yellow: #e0bb6c;
   
   --bg-shadow: 0 4px 6px rgba(0,0,0,0.05);
   --mini-shadow: 0px 2px 4px rgba(0, 0, 0, 0.15);
   --glow-shadow: 0 0px 50px rgba(255,255,255,1);
   --glow-shadow-darker: 0 0px 50px rgba(230,230,230,1);
     /*pair with border of 1px #ddd*/
+  --glow-inset-shadow: 0 0px 50px rgba(255,255,255,1), 0 0px 8px inset rgba(200,200,200,1);
   
   --gradient-scintilla: linear-gradient(190deg,rgb(255,255,255) 39%,rgb(209,236,255) 62%,rgb(246,230,255) 72%,rgb(168,196,255) 83%,rgb(117,188,255) 100%);
   --gradient-container: linear-gradient(150deg, rgba(143, 188, 224, 0.07) 2%, rgba(186, 239, 159, 0.16) 16%, rgba(248, 238, 160, 0.15) 40%, rgba(233, 177, 247, 0.19) 77%, rgba(233, 177, 247, 0.06) 100%);
@@ -64,6 +72,26 @@
   margin: 10px;
   white-space: nowrap;
 }
+.centered {
+  text-align: center;
+}
+.workspace {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 20px;
+  justify-content: center;
+  align-items: center;
+}
+.capsule {
+  border: 0px solid #fff;
+  box-shadow: var(--glow-shadow);
+  border-radius: 50px;
+  flex: 1 1 280px;
+  /*max-width: 300px*/
+  
+  background-color: rgba(144, 249, 223, 0.06);
+  background-image: var(--gradient-panel)
+}
 .grid {
   border: 0px solid #fff;
   box-shadow: var(--glow-shadow);
@@ -77,6 +105,9 @@
     linear-gradient(to bottom, #f0f0f0 2px, transparent 1px);
   background-size: 20px 20px;
 }
+.monospace-results p { margin: 8px 0; font-family: monospace; font-size: 14px; padding: 5px 10px }
+
+
 /*====================================
  Slider design
 ======================================*/
