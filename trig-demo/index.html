@@ -1,0 +1,195 @@
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;700&display=swap">
+<link href="https://fonts.googleapis.com/css2?family=Albert+Sans:ital,wght@0,100..900;1,100..900&family=Ibarra+Real+Nova:ital,wght@0,400..700;1,400..700&family=Instrument+Serif:ital@0;1&family=Space+Mono:ital,wght@0,400;0,700;1,400;1,700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="../global-styles.css">
+
+<!-- Main demo container -->
+<div class="container">
+  <span class="title"> Intro to Trig:</span> <span class="subtitle">the earliest times</span>
+  
+  <!-- Angle slider -->
+  <div class="slider-container">
+    <label for="angleSlider">Angle (θ): <span id="angleValue">30</span>°</label>
+    <input type="range" id="angleSlider" min="1" max="89" value="30" step="1">
+  </div>
+
+  <!-- Window & text workspace -->
+  <div class="demo-workspace">
+    
+    <!-- Triangle SVG window -->
+    <div class="grid">
+      <svg id="triangleSvg" width="100%" height="250" viewBox="0 0 300 250" style="background: transparent; display: block;">
+
+        <!-- Triangle path -->
+        <polygon id="triangle" points="" fill="rgba(52, 152, 219, 0.2)" stroke="var(--blue-title)" stroke-width="3" />
+        
+        <!-- Right angle mark -->
+        <path id="rightAngleMark" d="M 230 200 L 230 190 L 240 190" fill="none" stroke="#999" stroke-width="2"/>
+        
+        <!-- Text labels -->
+        <text id="lblHypotenuse" fill="var(--red-label)" font-weight="bold" text-anchor="middle" dominant-baseline="middle">Hypotenuse</text>
+        <text id="lblOpposite" fill="var(--green-label)" font-weight="bold" text-anchor="start">Opposite</text>
+        <text id="lblAdjacent" fill="var(--purple-label)" font-weight="bold" text-anchor="middle">Adjacent</text>
+        <text id="lblTheta" fill="#34495e" font-weight="bold" font-size="14">θ</text>
+      
+      </svg>
+    </div>
+      
+    <!-- Side Lengths & Ratios display -->
+    <div class="math-results">
+      <h2>Side Lengths & Ratios</h2>
+      <p><span class="label hyp">Hypotenuse:</span> <span id="valHyp">0.00</span></p>
+      <p><span class="label opp">Opposite:</span> <span id="valOpp">0.00</span></p>
+      <p><span class="label adj">Adjacent:</span> <span id="valAdj">0.00</span></p>
+      <hr>
+      <p> <span class="opp">Opposite</span> / <span class="hyp">Hypotenuse</span> = <span id="ratioSin">0.00</span></p>
+      <p> <span class="adj">Adjacent</span> / <span class="hyp">Hypotenuse</span> = <span id="ratioCos">0.00</span></p>
+      <p> <span class="opp">Opposite</span> / <span class="adj">Adjacent</span> = <span id="ratioTan">0.00</span></p>
+    </div>
+  </div>
+</div>
+
+<!-- Container underneath with text -->
+<div class="container">
+  <p class="contained-paragraph">
+    <i>Welcome to this interactive demo!</i> Play around with the value of <i>θ</i>, an angle in a right triangle, to see how the lengths and the ratios between them change. Here, we fix the hypotenuse to have a length of 180. 
+  </p>
+</div>
+
+
+<style>
+/* *, *::before, *::after {
+  box-sizing: border-box;
+}*/
+body {
+  margin: 0;
+  padding: 0;
+  /*overflow: hidden;*/
+  background-image: var(--gradient-scintilla);
+}
+.slider-container {
+  margin-bottom: 20px;
+  margin-top: 20px;
+  background-image: var(--gradient-panel);
+  box-shadow: var(--glow-shadow);
+  padding: 12px 30px 30px 30px;
+  border: 0px solid #fff;
+  border-radius: 60px;
+  font-family: 'Space Mono', monospace;
+}
+.demo-workspace {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 20px;
+}
+.math-results {
+  flex: 1 1 240px;
+  padding: 5px 15px 10px 15px;
+}
+.math-results h2 { margin-top: 0; font-weight: 400; }
+.math-results p { margin: 8px 0; font-family: 'Space Mono', monospace; font-size: 14px; }
+.label { font-weight: bold; }
+.hyp { color: var(--red-label); }
+.opp { color: var(--green-label); }
+.adj { color: var(--purple-label); }
+</style>
+
+<script>
+(function() {
+  // --- DOM selectors ---
+  const slider = document.getElementById('angleSlider');
+  const angleValue = document.getElementById('angleValue');
+  const triangle = document.getElementById('triangle');
+  
+  const lblHyp = document.getElementById('lblHypotenuse');
+  const lblOpp = document.getElementById('lblOpposite');
+  const lblAdj = document.getElementById('lblAdjacent');
+  const lblTheta = document.getElementById('lblTheta');
+
+  const valHyp = document.getElementById('valHyp');
+  const valOpp = document.getElementById('valOpp');
+  const valAdj = document.getElementById('valAdj');
+  const ratioSin = document.getElementById('ratioSin');
+  const ratioCos = document.getElementById('ratioCos');
+  const ratioTan = document.getElementById('ratioTan');
+  const mark = document.getElementById('rightAngleMark');
+
+  // Fixed hypotenuse length
+  const hypLength = 180; 
+
+  // --- Animation loop ---
+  function updateDemo() {
+    const degrees = parseInt(slider.value);
+    angleValue.textContent = degrees;
+
+    // Calculate trig
+    const radians = degrees * (Math.PI / 180);
+    const sinValue = Math.sin(radians);
+    const cosValue = Math.cos(radians);
+    const tanValue = Math.tan(radians);
+    
+    // Calculate lengths of sides
+    const oppositeSide = hypLength * sinValue;
+    const adjacentSide = hypLength * cosValue;
+
+    // Coordinate math for triangle nodes
+    const thetaX = 50;
+    const thetaY = 200;
+    
+    const rightAngleX = thetaX + adjacentSide;
+    const rightAngleY = thetaY;
+    
+    const topX = rightAngleX;
+    const topY = rightAngleY - oppositeSide;
+
+    // Redraw triangle polygon
+    triangle.setAttribute('points', `${thetaX},${thetaY} ${rightAngleX},${rightAngleY} ${topX},${topY}`);
+
+    // Redraw right angle (if there is enough space)
+    if ((degrees > 4) && (degrees < 86)) {
+      mark.setAttribute('d', `M ${rightAngleX - 10} ${rightAngleY} L ${rightAngleX - 10} ${rightAngleY - 10} L ${rightAngleX} ${rightAngleY - 10}`);
+    } else {
+      mark.setAttribute('d', "");
+    }
+    
+    // Update display
+    valHyp.textContent = hypLength.toFixed(0);
+    valOpp.textContent = oppositeSide.toFixed(0);
+    valAdj.textContent = adjacentSide.toFixed(0);
+
+    ratioSin.textContent = sinValue.toFixed(3);
+    ratioCos.textContent = cosValue.toFixed(3);
+    ratioTan.textContent = tanValue.toFixed(3);
+
+    // Position labels next to matching sides in SVG window
+    const hypMidX = (thetaX + topX) / 2;
+    const hypMidY = (thetaY + topY) / 2;
+    
+    lblHyp.setAttribute('x', hypMidX);
+    lblHyp.setAttribute('y', hypMidY);
+    
+    lblHyp.style.transform = `rotate(${-degrees}deg) translate(0px, -12px)`; // Rotate label of hypotenuse to match its angle
+    lblHyp.style.transformOrigin = `${hypMidX}px ${hypMidY}px`;
+    
+    lblOpp.setAttribute('x', rightAngleX + 10);
+    lblOpp.setAttribute('y', (topY + rightAngleY) / 2);
+
+    lblAdj.setAttribute('x', (thetaX + rightAngleX) / 2);
+    lblAdj.setAttribute('y', rightAngleY + 20);
+
+    // Position angle theta
+    lblTheta.setAttribute('x', thetaX + cosValue * 50);
+    lblTheta.setAttribute('y', Math.max(thetaY - 8, thetaY - sinValue * 10));
+    if (degrees < 12 || degrees > 86) {
+      lblTheta.setAttribute('opacity', 0); // only show theta if there is enough space
+    } else {
+      lblTheta.setAttribute('opacity', 1);
+    }
+  }
+
+  // Update scren at slider input
+  slider.addEventListener('input', updateDemo);
+  updateDemo(); // Run initially on script mount
+})();
+</script>
